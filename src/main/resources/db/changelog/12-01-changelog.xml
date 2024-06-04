@@ -21,7 +21,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet id="3" author="alexander">
+    <changeSet id="3" author="alexander" dbms="postgresql">
         <sql>
             <![CDATA[
 CREATE OR REPLACE FUNCTION random_firstname() RETURNS TEXT AS '
@@ -73,6 +73,105 @@ END;
 INSERT INTO person (id, firstname, lastname, age)
 SELECT nextval('person_id_seq'), random_firstname(), random_lastname(), (random() * 60 + 18)::int
 FROM generate_series(1, 10000000);
+
+]]>
+        </sql>
+    </changeSet>
+
+    <changeSet id="3-mysql" author="alexander" dbms="mysql">
+        <sql endDelimiter="//">
+            <![CDATA[
+
+DROP FUNCTION IF EXISTS random_firstname;
+
+CREATE FUNCTION random_firstname() RETURNS VARCHAR(50)
+DETERMINISTIC
+BEGIN
+    DECLARE names TEXT DEFAULT 'John,Jane,Mary,Michael,David,Sarah,Robert,Jessica,Daniel,Emily,
+                                Christopher,Amanda,Joshua,Jennifer,Matthew,Ashley,James,Linda,Patricia,
+                                Thomas,Anthony,Mark,Paul,Steven,Andrew,Kevin,Brian,George,Timothy,
+                                Joseph,Kenneth,Ronald,Donald,Charles,Scott,Eric,Stephen,Jonathan,Larry,
+                                Lisa,Kimberly,Michelle,Karen,Betty,Dorothy,Sandra,Ashley,Donna,Carol,
+                                Ruth,Sharon,Shirley,Laura,Cynthia,Angela,Melissa,Brenda,Amy,Anna,
+                                Rebecca,Virginia,Katherine,Christine,Samantha,Debra,Rachel,Carolyn,Heather,
+                                Joyce,Evelyn,Jean,Cheryl,Mildred,Katherine,Joan,Ashley,Judith,Rose,
+                                Janice,Kelly,Nicole,Judy,Christina,Kathy,Theresa,Beverly,Denise,Tammy,
+                                Irene,Jane,Lori,Rachel,Marilyn,Andrea,Kathryn,Louise,Sara,Anne,Jacqueline,
+                                Wanda,Bonnie,Julia,Ruby,Lois,Tina,Phyllis,Norma,Paula,Diana,Annie,Lillian,
+                                Emily,Robin,Peggy,Crystal,Gladys,Rita,Dawn,Connie,Florence,Tracy,Edna,Tiffany,
+                                Carmen,Rosa,Cindy,Grace,Wendy,Victoria,Edith,Kim,Sherry,Sylvia,Josephine,Thelma,
+                                Shannon,Sheila,Ethel,Ellen,Elaine,Marjorie,Carrie,Charlotte,Monica,Esther,Pauline,
+                                Emma,Juanita,Anita,Rhonda,Hazel,Amber,Eva,Debbie,April,Leslie,Clara,Lucille,Jamie,
+                                Joan,Vivian,Nina,Ida,Harriet,Grace,Rebecca,Lynda,Mary,Margaret,Ann,Linda,Carol,
+                                Patricia,Cynthia,Karen,Donna,Elizabeth,Deborah,Maria,Nancy,Barbara,Susan,Sandra,Kathleen';
+
+    DECLARE name_list TEXT;
+    DECLARE name_count INT;
+    DECLARE rand_index INT;
+    DECLARE rand_name VARCHAR(50);
+
+    SET name_list = REPLACE(names, '\n', '');
+    SET name_count = (LENGTH(name_list) - LENGTH(REPLACE(name_list, ',', ''))) + 1;
+    SET rand_index = FLOOR(1 + (RAND() * name_count));
+
+    SET rand_name = SUBSTRING_INDEX(SUBSTRING_INDEX(name_list, ',', rand_index), ',', -1);
+
+    RETURN TRIM(rand_name);
+END //
+
+DROP FUNCTION IF EXISTS random_lastname;
+
+CREATE FUNCTION random_lastname() RETURNS VARCHAR(50)
+DETERMINISTIC
+BEGIN
+    DECLARE names TEXT DEFAULT 'Smith,Johnson,Williams,Brown,Jones,Garcia,Miller,Davis,Martinez,Hernandez,
+                                Lopez,Gonzalez,Wilson,Anderson,Thomas,Taylor,Moore,Jackson,Martin,Lee,
+                                Perez,Thompson,White,Harris,Sanchez,Clark,Ramirez,Lewis,Robinson,Walker,
+                                Young,Allen,King,Wright,Scott,Torres,Nguyen,Hill,Flores,Green,
+                                Adams,Nelson,Baker,Hall,Rivera,Campbell,Mitchell,Carter,Roberts,Gomez,
+                                Phillips,Evans,Turner,Diaz,Parker,Cruz,Edwards,Collins,Reyes,Stewart,
+                                Morris,Morales,Murphy,Cook,Rogers,Gutierrez,Ortiz,Morgan,Cooper,Peterson,
+                                Bailey,Reed,Kelly,Howard,Ramos,Kim,Cox,Ward,Richardson,Watson,Brooks,
+                                Chavez,Wood,James,Bennett,Gray,Mendoza,Ruiz,Hughes,Price,Alvarez,Castillo,
+                                Sanders,Patel,Myers,Long,Ross,Foster,Jimenez,Powell,Jenkins,Perry,
+                                Russell,Sullivan,Bell,Coleman,Butler,Henderson,Barnes,Gonzales,Fisher,
+                                Freeman,Webb,Tucker,Guzman,Burns,Crawford,Olson,Simpson,Porter,Hunter,
+                                Gordon,Mendez,Silva,Shaw,Snyder,Mason,Dixon,Munoz,Hunt,Hicks,Holmes,
+                                Palmer,Wagner,Black,Robertson,Boyd,Rose,Stone,Salazar,Fox,Warren,
+                                Scott,Green,Baker,Adams,Nelson,Hill,Ramirez,Campbell,Mitchell,Roberts';
+
+    DECLARE name_list TEXT;
+    DECLARE name_count INT;
+    DECLARE rand_index INT;
+    DECLARE rand_name VARCHAR(50);
+
+    SET name_list = REPLACE(names, '\n', '');
+    SET name_count = (LENGTH(name_list) - LENGTH(REPLACE(name_list, ',', ''))) + 1;
+    SET rand_index = FLOOR(1 + (RAND() * name_count));
+
+    SET rand_name = SUBSTRING_INDEX(SUBSTRING_INDEX(name_list, ',', rand_index), ',', -1);
+
+    RETURN TRIM(rand_name);
+END //
+
+DROP PROCEDURE IF EXISTS insert_large_data;
+
+CREATE TEMPORARY TABLE series (num INT NOT NULL PRIMARY KEY);
+
+CREATE PROCEDURE insert_large_data()
+BEGIN
+    DECLARE counter INT DEFAULT 20000;
+
+    WHILE counter < 10000000 DO
+        INSERT INTO person (id, firstname, lastname, age)
+        SELECT counter,random_firstname(), random_lastname(), FLOOR(18 + (RAND() * 60));
+
+        SET counter = counter + 1;
+    END WHILE;
+END //
+
+CALL insert_large_data //
+
 
 ]]>
         </sql>

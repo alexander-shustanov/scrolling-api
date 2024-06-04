@@ -16,9 +16,10 @@ services:
             timeout: 5s
             start_period: 10s
             retries: 5
+
     pgadmin:
-        image: dpage/pgadmin4:latest
-        restart: always
+        image: dpage/pgadmin4:8.7
+        restart: "no"
         ports:
             - "5050:80"
         volumes:
@@ -37,6 +38,43 @@ services:
             start_period: 10s
             retries: 5
         entrypoint: /bin/sh -c "chmod 600 /pgadmin4/pgpass; /entrypoint.sh;"
+    mysql:
+        image: mysql:8.4.0
+        restart: "no"
+        ports:
+            - "3306:3306"
+        volumes:
+            - mysql_data:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: scrolling-api
+        healthcheck:
+            test: mysqladmin ping -u root -p $$MYSQL_ROOT_PASSWORD
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 5
+    phpmyadmin:
+        image: phpmyadmin:5.2.1
+        restart: "no"
+        ports:
+            - "8282:80"
+        volumes:
+            - phpmyadmin_data:/sessions
+        environment:
+            PMA_ARBITRARY: 1
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            PMA_USER: root
+            PMA_PASSWORD: root
+        healthcheck:
+            test: curl --fail -s http://localhost/robots.txt || exit -1
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 5
 volumes:
     postgres_data:
     pgadmin_data:
+    mysql_data:
+    phpmyadmin_data:
